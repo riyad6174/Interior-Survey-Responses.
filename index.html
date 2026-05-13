@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interior Survey</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-family: 'Georgia', serif;
+      }
+      .card-hover:hover {
+        transform: scale(1.03);
+        transition: all 0.3s;
+      }
+    </style>
+  </head>
+  <body class="bg-[#1a1714] text-[#e8e0d4] min-h-screen">
+    <div class="max-w-4xl mx-auto px-6 py-12">
+      <!-- Header -->
+      <div class="flex justify-between items-center mb-8">
+        <h1 class="text-lg tracking-[0.25em] uppercase text-[#9a8c7e]">
+          Interior Survey
+        </h1>
+        <div id="progress" class="text-sm tracking-widest text-[#9a8c7e]">
+          1 / 12
+        </div>
+      </div>
+
+      <div class="h-1 bg-[#2e2a26] rounded mb-10">
+        <div
+          id="progressBar"
+          class="h-1 bg-[#c8a96e] rounded transition-all duration-500"
+          style="width: 8.33%"
+        ></div>
+      </div>
+
+      <!-- Question Area -->
+      <div id="questionArea" class="mb-12">
+        <p
+          id="qNum"
+          class="text-[#c8a96e] text-xs tracking-[0.3em] uppercase mb-3"
+        >
+          Question 1
+        </p>
+        <h2 id="qText" class="text-3xl leading-tight font-light"></h2>
+      </div>
+
+      <!-- Options -->
+      <div
+        id="options"
+        class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
+      ></div>
+
+      <!-- Free Text -->
+      <div id="freeTextArea" class="hidden mb-12">
+        <p
+          id="subtext"
+          class="text-[#6b635a] text-sm italic leading-relaxed mb-6"
+        ></p>
+        <textarea
+          id="freeTextInput"
+          rows="8"
+          class="w-full bg-[#221e1b] border border-[#2e2a26] rounded p-6 text-[#e8e0d4] focus:outline-none focus:border-[#c8a96e] resize-y"
+          placeholder="Share your thoughts here..."
+        ></textarea>
+        <div id="charCount" class="text-right text-xs text-[#4a4540] mt-2">
+          0 / 1000
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="flex justify-between items-center">
+        <button
+          id="backBtn"
+          class="hidden px-8 py-3 border border-[#2e2a26] text-[#9a8c7e] hover:bg-[#2e2a26] rounded transition"
+        >
+          ← Back
+        </button>
+
+        <button
+          id="nextBtn"
+          class="px-10 py-3 bg-[#c8a96e] text-[#1a1714] font-bold tracking-widest uppercase text-sm rounded hover:bg-[#d4b37f] transition"
+        >
+          Next →
+        </button>
+      </div>
+
+      <div id="errorMsg" class="text-red-500 text-sm mt-6 hidden"></div>
+    </div>
+
+    <!-- Success Screen -->
+    <div
+      id="successScreen"
+      class="hidden max-w-2xl mx-auto px-6 py-20 text-center"
+    >
+      <div class="text-5xl mb-6">✦</div>
+      <h2 class="text-4xl mb-3">Survey Complete</h2>
+      <p class="text-[#6b635a] mb-10">Thank you for completing the survey.</p>
+
+      <button
+        onclick="restartSurvey()"
+        class="px-10 py-4 border border-[#2e2a26] text-[#9a8c7e] hover:bg-[#2e2a26] rounded transition"
+      >
+        Restart Survey
+      </button>
+    </div>
+
+    <script>
+      // ==================== CONFIG ====================
+      const SHEET_URL =
+        'https://script.google.com/macros/s/AKfycbzbiccl1P0vDoDGxhSICgseg_xko18MigGRifePvXS8kXq8HJyuY7YBXmo4CM-CIHLi3w/exec';
+      // ← Replace this with your actual Google Apps Script URL
+
+      const QUESTIONS = [
+        {
+          id: 1,
+          question: 'Which interior style speaks to you most?',
+          options: [
+            {
+              label: 'Maximalist & Eclectic',
+              desc: 'Bold, layered, art-forward',
+            },
+            { label: 'Modern Minimalist', desc: 'Clean lines, calm spaces' },
+            { label: 'Warm Contemporary', desc: 'Inviting, layered neutrals' },
+            {
+              label: 'Timeless Classic',
+              desc: 'Elegant, traditional with a twist',
+            },
+          ],
+        },
+        {
+          id: 2,
+          question: 'What is your preferred color palette?',
+          options: [
+            { label: 'Neutral & Earthy', desc: 'Beiges, creams, warm woods' },
+            {
+              label: 'Bold & Dramatic',
+              desc: 'Deep greens, blacks, rich jewel tones',
+            },
+            { label: 'Light & Airy', desc: 'Whites, soft blues, pastels' },
+            { label: 'Warm & Moody', desc: 'Terracotta, mustard, deep browns' },
+          ],
+        },
+        {
+          id: 3,
+          question: 'How important is sustainability to you?',
+          options: [
+            {
+              label: 'Very Important',
+              desc: 'Eco-friendly materials preferred',
+            },
+            { label: 'Somewhat Important', desc: 'Nice to have' },
+            { label: 'Not a Priority', desc: 'Focus on aesthetics first' },
+          ],
+        },
+        {
+          id: 4,
+          question: 'What is your ideal lighting preference?',
+          options: [
+            { label: 'Warm Ambient', desc: 'Soft, cozy lighting' },
+            { label: 'Bright & Layered', desc: 'Multiple light sources' },
+            { label: 'Statement Lighting', desc: 'Bold fixtures as art' },
+          ],
+        },
+        {
+          id: 5,
+          question: 'What texture do you love most?',
+          options: [
+            { label: 'Velvet & Linen', desc: 'Soft and tactile' },
+            { label: 'Wood & Stone', desc: 'Natural and organic' },
+            { label: 'Leather & Metal', desc: 'Industrial luxe' },
+            { label: 'Bouclé & Wool', desc: 'Cozy and textured' },
+          ],
+        },
+        {
+          id: 6,
+          question: 'How do you feel about patterns?',
+          options: [
+            { label: 'Love Bold Patterns', desc: 'Mixing prints' },
+            { label: 'Subtle Patterns Only', desc: 'Stripes, plaids' },
+            { label: 'Mostly Solid', desc: 'Minimal patterns' },
+          ],
+        },
+        {
+          id: 7,
+          question: 'What is your favorite piece of furniture style?',
+          options: [
+            { label: 'Mid-Century Modern', desc: 'Clean, iconic shapes' },
+            { label: 'Contemporary', desc: 'Sleek and current' },
+            { label: 'Vintage & Antique', desc: 'Character and history' },
+            { label: 'Custom Bespoke', desc: 'Made just for me' },
+          ],
+        },
+        {
+          id: 8,
+          question: 'How do you use your living space?',
+          options: [
+            { label: 'Entertaining & Hosting', desc: 'Frequent guests' },
+            { label: 'Quiet Family Time', desc: 'Relaxed evenings' },
+            { label: 'Work from Home', desc: 'Multi-functional' },
+          ],
+        },
+        {
+          id: 9,
+          question: 'How much are you willing to invest on your master bed?',
+          options: [
+            { label: '$1,000', desc: 'Quality without compromise' },
+            { label: '$5,000', desc: 'Investment piece' },
+            { label: '$10,000', desc: 'Heirloom-grade craftsmanship' },
+          ],
+        },
+        {
+          id: 10,
+          question: 'How much are you willing to invest on your couch?',
+          options: [
+            { label: '$1,000', desc: 'Quality without compromise' },
+            { label: '$5,000', desc: 'Investment piece' },
+            { label: '$10,000', desc: 'Heirloom-grade craftsmanship' },
+          ],
+        },
+        {
+          id: 11,
+          question:
+            'How much are you willing to invest on sconces and table lamps each?',
+          options: [
+            { label: '$200', desc: 'Accessible design' },
+            { label: '$1,500', desc: 'Designer lighting' },
+            { label: '$5,000', desc: 'Collectible pieces' },
+          ],
+        },
+        {
+          id: 12,
+          question:
+            'We are here to curate your home. Help us with any other unique insights you think will be helpful.',
+          subtext:
+            "For example, is there a particular room you want for it to stand out (a children's play room, a bar, a library); are there colors / textures / wood finishes you are strongly opposed to; etc.",
+          type: 'freetext',
+          maxChars: 1000,
+        },
+      ];
+
+      // ==================== STATE ====================
+      let current = 0;
+      let answers = {};
+
+      // ==================== RENDER QUESTION ====================
+      function renderQuestion() {
+        const q = QUESTIONS[current];
+
+        document.getElementById('qNum').textContent = `Question ${current + 1}`;
+        document.getElementById('qText').textContent = q.question;
+        document.getElementById('progress').textContent =
+          `${current + 1} / ${QUESTIONS.length}`;
+        document.getElementById('progressBar').style.width =
+          `${((current + 1) / QUESTIONS.length) * 100}%`;
+
+        const optionsDiv = document.getElementById('options');
+        const freeTextArea = document.getElementById('freeTextArea');
+
+        optionsDiv.innerHTML = '';
+        freeTextArea.classList.add('hidden');
+
+        if (q.type === 'freetext') {
+          freeTextArea.classList.remove('hidden');
+          document.getElementById('subtext').textContent = q.subtext || '';
+          const textarea = document.getElementById('freeTextInput');
+          textarea.value = answers[q.id] || '';
+
+          textarea.oninput = () => {
+            answers[q.id] = textarea.value;
+            document.getElementById('charCount').textContent =
+              `${textarea.value.length} / ${q.maxChars}`;
+          };
+        } else {
+          q.options.forEach((opt, i) => {
+            const isSelected = answers[q.id] === i;
+
+            const card = document.createElement('div');
+            card.className = `bg-[#221e1b] border rounded-lg p-6 cursor-pointer transition-all card-hover ${isSelected ? 'border-[#c8a96e] shadow-2xl' : 'border-[#2e2a26]'}`;
+            card.innerHTML = `
+        <div class="text-3xl font-light mb-3">${opt.label}</div>
+        <div class="text-sm text-[#6b635a]">${opt.desc}</div>
+        ${isSelected ? `<div class="mt-6 text-[#c8a96e] text-2xl">✓</div>` : ''}
+      `;
+            card.onclick = () => {
+              answers[q.id] = i;
+              renderQuestion();
+            };
+            optionsDiv.appendChild(card);
+          });
+        }
+
+        document
+          .getElementById('backBtn')
+          .classList.toggle('hidden', current === 0);
+        document.getElementById('nextBtn').textContent =
+          current === QUESTIONS.length - 1 ? 'Finish Survey' : 'Next →';
+      }
+
+      // ==================== NAVIGATION ====================
+      document.getElementById('backBtn').onclick = () => {
+        if (current > 0) current--;
+        renderQuestion();
+      };
+
+      document.getElementById('nextBtn').onclick = () => {
+        const q = QUESTIONS[current];
+
+        if (q.type !== 'freetext' && answers[q.id] === undefined) {
+          alert('Please select an option before continuing.');
+          return;
+        }
+
+        if (current < QUESTIONS.length - 1) {
+          current++;
+          renderQuestion();
+        } else {
+          submitSurvey();
+        }
+      };
+
+      // ==================== SUBMIT TO GOOGLE SHEETS ====================
+      async function submitSurvey() {
+        const btn = document.getElementById('nextBtn');
+        btn.textContent = 'Saving...';
+        btn.disabled = true;
+
+        const payload = { timestamp: new Date().toISOString() };
+
+        QUESTIONS.forEach((q, i) => {
+          const ans = answers[q.id];
+          if (q.type === 'freetext') {
+            payload[`Q${i + 1}_${q.question.substring(0, 40)}`] = ans || '';
+          } else {
+            payload[`Q${i + 1}_${q.question.substring(0, 40)}`] =
+              ans !== undefined ? q.options[ans].label : '';
+          }
+        });
+
+        try {
+          await fetch(SHEET_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          document.getElementById('successScreen').classList.remove('hidden');
+          document.querySelector('div.max-w-4xl').classList.add('hidden');
+        } catch (err) {
+          document.getElementById('errorMsg').classList.remove('hidden');
+          document.getElementById('errorMsg').textContent =
+            'Failed to submit. Please try again.';
+        }
+      }
+
+      function restartSurvey() {
+        current = 0;
+        answers = {};
+        document.getElementById('successScreen').classList.add('hidden');
+        document.querySelector('div.max-w-4xl').classList.remove('hidden');
+        renderQuestion();
+      }
+
+      // Start the survey
+      renderQuestion();
+    </script>
+  </body>
+</html>
