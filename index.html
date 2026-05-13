@@ -4,64 +4,131 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Interior Survey</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+      rel="stylesheet"
+    />
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       body {
-        font-family: 'Georgia', serif;
+        font-family: 'Cormorant Garamond', 'Georgia', serif;
       }
-      .card-hover:hover {
-        transform: scale(1.03);
-        transition: all 0.3s;
+
+      /* Option card base */
+      .option-card {
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+          box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+          border-color 0.2s ease;
+      }
+      .option-card:hover {
+        transform: translateY(-5px);
+      }
+      .option-card.selected {
+        box-shadow: 0 0 0 2px #c8a96e, 0 16px 40px rgba(200, 169, 110, 0.25);
+      }
+
+      /* Image zoom on card hover */
+      .option-card:hover .card-img {
+        transform: scale(1.06);
+      }
+      .card-img {
+        transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Gradient overlay always on image */
+      .img-gradient {
+        background: linear-gradient(
+          to bottom,
+          transparent 30%,
+          rgba(26, 23, 20, 0.65) 100%
+        );
+      }
+
+      /* Gold shimmer overlay when selected */
+      .selected-tint {
+        background: rgba(200, 169, 110, 0.18);
+      }
+
+      /* Toast animations */
+      @keyframes toastIn {
+        from {
+          transform: translateX(110%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes toastOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(110%);
+          opacity: 0;
+        }
+      }
+      .toast-enter {
+        animation: toastIn 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+      }
+      .toast-exit {
+        animation: toastOut 0.3s ease-in forwards;
       }
     </style>
   </head>
+
   <body class="bg-[#1a1714] text-[#e8e0d4] min-h-screen">
-    <div class="max-w-4xl mx-auto px-6 py-12">
+    <!-- Toast container -->
+    <div
+      id="toastContainer"
+      class="fixed bottom-6 right-4 sm:right-6 z-50 flex flex-col gap-3 pointer-events-none"
+    ></div>
+
+    <!-- Main survey wrapper -->
+    <div id="surveyWrap" class="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
       <!-- Header -->
       <div class="flex justify-between items-center mb-8">
-        <h1 class="text-lg tracking-[0.25em] uppercase text-[#9a8c7e]">
+        <h1 class="text-xs sm:text-sm tracking-[0.3em] uppercase text-[#9a8c7e]">
           Interior Survey
         </h1>
-        <div id="progress" class="text-sm tracking-widest text-[#9a8c7e]">
+        <div id="progress" class="text-xs tracking-widest text-[#9a8c7e]">
           1 / 12
         </div>
       </div>
 
-      <div class="h-1 bg-[#2e2a26] rounded mb-10">
+      <!-- Progress bar -->
+      <div class="h-px bg-[#2e2a26] rounded mb-10">
         <div
           id="progressBar"
-          class="h-1 bg-[#c8a96e] rounded transition-all duration-500"
+          class="h-px bg-[#c8a96e] rounded transition-all duration-700"
           style="width: 8.33%"
         ></div>
       </div>
 
-      <!-- Question Area -->
-      <div id="questionArea" class="mb-12">
-        <p
-          id="qNum"
-          class="text-[#c8a96e] text-xs tracking-[0.3em] uppercase mb-3"
-        >
+      <!-- Question -->
+      <div class="mb-8 sm:mb-10">
+        <p id="qNum" class="text-[#c8a96e] text-xs tracking-[0.35em] uppercase mb-3">
           Question 1
         </p>
-        <h2 id="qText" class="text-3xl leading-tight font-light"></h2>
+        <h2
+          id="qText"
+          class="text-2xl sm:text-3xl md:text-4xl leading-snug font-light max-w-2xl"
+        ></h2>
       </div>
 
-      <!-- Options -->
-      <div
-        id="options"
-        class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
-      ></div>
+      <!-- Options grid (populated by JS) -->
+      <div id="options" class="mb-12"></div>
 
-      <!-- Free Text -->
+      <!-- Free text -->
       <div id="freeTextArea" class="hidden mb-12">
-        <p
-          id="subtext"
-          class="text-[#6b635a] text-sm italic leading-relaxed mb-6"
-        ></p>
+        <p id="subtext" class="text-[#6b635a] text-sm italic leading-relaxed mb-6"></p>
         <textarea
           id="freeTextInput"
           rows="8"
-          class="w-full bg-[#221e1b] border border-[#2e2a26] rounded p-6 text-[#e8e0d4] focus:outline-none focus:border-[#c8a96e] resize-y"
+          class="w-full bg-[#221e1b] border border-[#2e2a26] rounded-xl p-5 sm:p-6 text-[#e8e0d4] placeholder-[#3d3730] focus:outline-none focus:border-[#c8a96e] resize-y transition-colors text-base"
           placeholder="Share your thoughts here..."
         ></textarea>
         <div id="charCount" class="text-right text-xs text-[#4a4540] mt-2">
@@ -73,34 +140,33 @@
       <div class="flex justify-between items-center">
         <button
           id="backBtn"
-          class="hidden px-8 py-3 border border-[#2e2a26] text-[#9a8c7e] hover:bg-[#2e2a26] rounded transition"
+          class="hidden px-6 sm:px-8 py-3 border border-[#2e2a26] text-[#9a8c7e] hover:bg-[#2e2a26] rounded-lg transition-all text-xs tracking-[0.2em] uppercase"
         >
           ← Back
         </button>
 
         <button
           id="nextBtn"
-          class="px-10 py-3 bg-[#c8a96e] text-[#1a1714] font-bold tracking-widest uppercase text-sm rounded hover:bg-[#d4b37f] transition"
+          class="ml-auto px-8 sm:px-10 py-3 bg-[#c8a96e] text-[#1a1714] font-semibold tracking-[0.2em] uppercase text-xs rounded-lg hover:bg-[#d4b37f] active:scale-95 transition-all"
         >
           Next →
         </button>
       </div>
-
-      <div id="errorMsg" class="text-red-500 text-sm mt-6 hidden"></div>
     </div>
 
-    <!-- Success Screen -->
+    <!-- Success screen -->
     <div
       id="successScreen"
-      class="hidden max-w-2xl mx-auto px-6 py-20 text-center"
+      class="hidden max-w-2xl mx-auto px-6 py-24 text-center"
     >
-      <div class="text-5xl mb-6">✦</div>
-      <h2 class="text-4xl mb-3">Survey Complete</h2>
-      <p class="text-[#6b635a] mb-10">Thank you for completing the survey.</p>
-
+      <div class="text-5xl mb-6 text-[#c8a96e]">✦</div>
+      <h2 class="text-4xl mb-4 font-light">Survey Complete</h2>
+      <p class="text-[#6b635a] text-lg mb-12 font-light">
+        Thank you for sharing your vision with us.
+      </p>
       <button
         onclick="restartSurvey()"
-        class="px-10 py-4 border border-[#2e2a26] text-[#9a8c7e] hover:bg-[#2e2a26] rounded transition"
+        class="px-10 py-4 border border-[#2e2a26] text-[#9a8c7e] hover:bg-[#2e2a26] rounded-lg transition tracking-[0.2em] uppercase text-xs"
       >
         Restart Survey
       </button>
@@ -110,23 +176,19 @@
       // ==================== CONFIG ====================
       const SHEET_URL =
         'https://script.google.com/macros/s/AKfycbygbfdU1fJcwqCgUP7J0kruzS1sY0DfPrOeygipy76pK2cmNbQy9CArXCYkgiG6Fz8/exec';
-      // ← Replace this with your actual Google Apps Script URL
+
+      // Placeholder image used for every option (swap per-option later)
+      const PLACEHOLDER_IMG = 'assets/q1.jpeg';
 
       const QUESTIONS = [
         {
           id: 1,
           question: 'Which interior style speaks to you most?',
           options: [
-            {
-              label: 'Maximalist & Eclectic',
-              desc: 'Bold, layered, art-forward',
-            },
+            { label: 'Maximalist & Eclectic', desc: 'Bold, layered, art-forward' },
             { label: 'Modern Minimalist', desc: 'Clean lines, calm spaces' },
             { label: 'Warm Contemporary', desc: 'Inviting, layered neutrals' },
-            {
-              label: 'Timeless Classic',
-              desc: 'Elegant, traditional with a twist',
-            },
+            { label: 'Timeless Classic', desc: 'Elegant, traditional with a twist' },
           ],
         },
         {
@@ -134,10 +196,7 @@
           question: 'What is your preferred color palette?',
           options: [
             { label: 'Neutral & Earthy', desc: 'Beiges, creams, warm woods' },
-            {
-              label: 'Bold & Dramatic',
-              desc: 'Deep greens, blacks, rich jewel tones',
-            },
+            { label: 'Bold & Dramatic', desc: 'Deep greens, blacks, rich jewel tones' },
             { label: 'Light & Airy', desc: 'Whites, soft blues, pastels' },
             { label: 'Warm & Moody', desc: 'Terracotta, mustard, deep browns' },
           ],
@@ -146,10 +205,7 @@
           id: 3,
           question: 'How important is sustainability to you?',
           options: [
-            {
-              label: 'Very Important',
-              desc: 'Eco-friendly materials preferred',
-            },
+            { label: 'Very Important', desc: 'Eco-friendly materials preferred' },
             { label: 'Somewhat Important', desc: 'Nice to have' },
             { label: 'Not a Priority', desc: 'Focus on aesthetics first' },
           ],
@@ -244,14 +300,55 @@
       let current = 0;
       let answers = {};
 
-      // ==================== RENDER QUESTION ====================
+      // ==================== TOAST ====================
+      function showToast(message, type = 'warning') {
+        const container = document.getElementById('toastContainer');
+
+        const styles = {
+          warning:
+            'bg-[#26200f] border-[#c8a96e] text-[#e8c87a]',
+          error:
+            'bg-[#26100f] border-[#c86e6e] text-[#e87a7a]',
+          info:
+            'bg-[#0f1f26] border-[#6eaac8] text-[#7ac8e8]',
+        };
+
+        const icons = {
+          warning: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+          error: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+          info: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+        };
+
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto flex items-start gap-3 px-4 py-3.5 rounded-xl border shadow-2xl text-sm max-w-xs sm:max-w-sm toast-enter ${styles[type] || styles.warning}`;
+        toast.innerHTML = `
+          <span class="shrink-0 mt-0.5">${icons[type] || icons.warning}</span>
+          <span class="leading-snug font-light tracking-wide">${message}</span>
+        `;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.classList.remove('toast-enter');
+          toast.classList.add('toast-exit');
+          setTimeout(() => toast.remove(), 320);
+        }, 3800);
+      }
+
+      // ==================== GRID LAYOUT ====================
+      function gridClass(count) {
+        if (count === 2) return 'grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mb-12';
+        if (count === 3) return 'grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mb-12';
+        // 4 options
+        return 'grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-12';
+      }
+
+      // ==================== RENDER ====================
       function renderQuestion() {
         const q = QUESTIONS[current];
 
         document.getElementById('qNum').textContent = `Question ${current + 1}`;
         document.getElementById('qText').textContent = q.question;
-        document.getElementById('progress').textContent =
-          `${current + 1} / ${QUESTIONS.length}`;
+        document.getElementById('progress').textContent = `${current + 1} / ${QUESTIONS.length}`;
         document.getElementById('progressBar').style.width =
           `${((current + 1) / QUESTIONS.length) * 100}%`;
 
@@ -259,6 +356,7 @@
         const freeTextArea = document.getElementById('freeTextArea');
 
         optionsDiv.innerHTML = '';
+        optionsDiv.className = '';
         freeTextArea.classList.add('hidden');
 
         if (q.type === 'freetext') {
@@ -266,34 +364,69 @@
           document.getElementById('subtext').textContent = q.subtext || '';
           const textarea = document.getElementById('freeTextInput');
           textarea.value = answers[q.id] || '';
-
           textarea.oninput = () => {
-            answers[q.id] = textarea.value;
+            const val = textarea.value.slice(0, q.maxChars);
+            textarea.value = val;
+            answers[q.id] = val;
             document.getElementById('charCount').textContent =
-              `${textarea.value.length} / ${q.maxChars}`;
+              `${val.length} / ${q.maxChars}`;
           };
         } else {
+          optionsDiv.className = gridClass(q.options.length);
+
           q.options.forEach((opt, i) => {
             const isSelected = answers[q.id] === i;
 
             const card = document.createElement('div');
-            card.className = `bg-[#221e1b] border rounded-lg p-6 cursor-pointer transition-all card-hover ${isSelected ? 'border-[#c8a96e] shadow-2xl' : 'border-[#2e2a26]'}`;
+            card.className = `option-card bg-[#1e1b18] rounded-2xl overflow-hidden cursor-pointer border-2 ${
+              isSelected ? 'selected border-[#c8a96e]' : 'border-[#2a2520] hover:border-[#3d3730]'
+            }`;
+
             card.innerHTML = `
-        <div class="text-3xl font-light mb-3">${opt.label}</div>
-        <div class="text-sm text-[#6b635a]">${opt.desc}</div>
-        ${isSelected ? `<div class="mt-6 text-[#c8a96e] text-2xl">✓</div>` : ''}
-      `;
+              <!-- Image -->
+              <div class="relative overflow-hidden" style="aspect-ratio:4/3;">
+                <img
+                  src="${opt.img || PLACEHOLDER_IMG}"
+                  alt="${opt.label}"
+                  class="card-img w-full h-full object-cover"
+                />
+                <div class="img-gradient absolute inset-0"></div>
+                ${isSelected ? '<div class="selected-tint absolute inset-0"></div>' : ''}
+
+                <!-- Selected badge -->
+                ${
+                  isSelected
+                    ? `<div class="absolute top-3 right-3 w-7 h-7 bg-[#c8a96e] rounded-full flex items-center justify-center shadow-lg">
+                        <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+                          <path d="M2 7L5.5 10.5L12 3.5" stroke="#1a1714" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                       </div>`
+                    : ''
+                }
+              </div>
+
+              <!-- Label -->
+              <div class="px-4 py-4 sm:px-5 sm:py-4">
+                <div class="text-sm sm:text-base font-medium leading-snug mb-1 tracking-wide ${isSelected ? 'text-[#c8a96e]' : 'text-[#e8e0d4]'}">
+                  ${opt.label}
+                </div>
+                <div class="text-xs sm:text-sm leading-relaxed font-light ${isSelected ? 'text-[#b5a898]' : 'text-[#9a8c7e]'}">
+                  ${opt.desc}
+                </div>
+                ${isSelected ? '<div class="mt-3 h-px w-10 bg-[#c8a96e] rounded-full"></div>' : ''}
+              </div>
+            `;
+
             card.onclick = () => {
               answers[q.id] = i;
               renderQuestion();
             };
+
             optionsDiv.appendChild(card);
           });
         }
 
-        document
-          .getElementById('backBtn')
-          .classList.toggle('hidden', current === 0);
+        document.getElementById('backBtn').classList.toggle('hidden', current === 0);
         document.getElementById('nextBtn').textContent =
           current === QUESTIONS.length - 1 ? 'Finish Survey' : 'Next →';
       }
@@ -308,7 +441,7 @@
         const q = QUESTIONS[current];
 
         if (q.type !== 'freetext' && answers[q.id] === undefined) {
-          alert('Please select an option before continuing.');
+          showToast('Please select an option before continuing.', 'warning');
           return;
         }
 
@@ -320,11 +453,12 @@
         }
       };
 
-      // ==================== SUBMIT TO GOOGLE SHEETS ====================
+      // ==================== SUBMIT ====================
       async function submitSurvey() {
         const btn = document.getElementById('nextBtn');
         btn.textContent = 'Saving...';
         btn.disabled = true;
+        btn.classList.add('opacity-60', 'cursor-not-allowed');
 
         const payload = { timestamp: new Date().toISOString() };
 
@@ -346,12 +480,13 @@
             body: JSON.stringify(payload),
           });
 
+          document.getElementById('surveyWrap').classList.add('hidden');
           document.getElementById('successScreen').classList.remove('hidden');
-          document.querySelector('div.max-w-4xl').classList.add('hidden');
         } catch (err) {
-          document.getElementById('errorMsg').classList.remove('hidden');
-          document.getElementById('errorMsg').textContent =
-            'Failed to submit. Please try again.';
+          showToast('Submission failed. Please check your connection and try again.', 'error');
+          btn.textContent = 'Finish Survey';
+          btn.disabled = false;
+          btn.classList.remove('opacity-60', 'cursor-not-allowed');
         }
       }
 
@@ -359,11 +494,11 @@
         current = 0;
         answers = {};
         document.getElementById('successScreen').classList.add('hidden');
-        document.querySelector('div.max-w-4xl').classList.remove('hidden');
+        document.getElementById('surveyWrap').classList.remove('hidden');
         renderQuestion();
       }
 
-      // Start the survey
+      // Boot
       renderQuestion();
     </script>
   </body>
