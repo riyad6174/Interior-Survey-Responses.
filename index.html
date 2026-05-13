@@ -124,14 +124,14 @@
 
       <!-- Free text -->
       <div id="freeTextArea" class="hidden mb-12">
-        <p id="subtext" class="text-[#6b635a] text-sm italic leading-relaxed mb-6"></p>
+        <p id="subtext" class="text-[#9a8c7e] text-sm italic leading-relaxed mb-6"></p>
         <textarea
           id="freeTextInput"
           rows="8"
           class="w-full bg-[#221e1b] border border-[#2e2a26] rounded-xl p-5 sm:p-6 text-[#e8e0d4] placeholder-[#3d3730] focus:outline-none focus:border-[#c8a96e] resize-y transition-colors text-base"
           placeholder="Share your thoughts here..."
         ></textarea>
-        <div id="charCount" class="text-right text-xs text-[#4a4540] mt-2">
+        <div id="charCount" class="text-right text-xs text-[#6b635a] mt-2">
           0 / 1000
         </div>
       </div>
@@ -157,19 +157,36 @@
     <!-- Success screen -->
     <div
       id="successScreen"
-      class="hidden max-w-2xl mx-auto px-6 py-24 text-center"
+      class="hidden max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-20"
     >
-      <div class="text-5xl mb-6 text-[#c8a96e]">✦</div>
-      <h2 class="text-4xl mb-4 font-light">Survey Complete</h2>
-      <p class="text-[#6b635a] text-lg mb-12 font-light">
-        Thank you for sharing your vision with us.
-      </p>
-      <button
-        onclick="restartSurvey()"
-        class="px-10 py-4 border border-[#2e2a26] text-[#9a8c7e] hover:bg-[#2e2a26] rounded-lg transition tracking-[0.2em] uppercase text-xs"
-      >
-        Restart Survey
-      </button>
+      <!-- Header -->
+      <div class="text-center mb-12">
+        <div class="text-5xl mb-5 text-[#c8a96e]">✦</div>
+        <h2 class="text-3xl sm:text-4xl mb-3 font-light">Survey Complete</h2>
+        <p class="text-[#9a8c7e] text-base font-light">
+          Thank you for sharing your vision with us.
+        </p>
+      </div>
+
+      <!-- Summary divider -->
+      <div class="flex items-center gap-4 mb-8">
+        <div class="flex-1 h-px bg-[#2e2a26]"></div>
+        <span class="text-[#c8a96e] text-xs tracking-[0.3em] uppercase">Your Responses</span>
+        <div class="flex-1 h-px bg-[#2e2a26]"></div>
+      </div>
+
+      <!-- Answers list -->
+      <div id="summaryList" class="space-y-3 mb-12"></div>
+
+      <!-- Restart -->
+      <div class="text-center">
+        <button
+          onclick="restartSurvey()"
+          class="px-10 py-3.5 border border-[#2e2a26] text-[#9a8c7e] hover:bg-[#2e2a26] rounded-lg transition tracking-[0.2em] uppercase text-xs"
+        >
+          Restart Survey
+        </button>
+      </div>
     </div>
 
     <script>
@@ -453,6 +470,50 @@
         }
       };
 
+      // ==================== SUMMARY ====================
+      function buildSummary() {
+        const list = document.getElementById('summaryList');
+        list.innerHTML = '';
+
+        QUESTIONS.forEach((q, i) => {
+          const ans = answers[q.id];
+          let answerLabel = '';
+          let answerDesc = '';
+
+          if (q.type === 'freetext') {
+            answerLabel = ans && ans.trim() ? ans.trim() : 'No notes provided';
+            answerDesc = '';
+          } else {
+            if (ans !== undefined) {
+              answerLabel = q.options[ans].label;
+              answerDesc = q.options[ans].desc;
+            } else {
+              answerLabel = 'Skipped';
+              answerDesc = '';
+            }
+          }
+
+          const row = document.createElement('div');
+          row.className = 'flex gap-4 bg-[#1e1b18] rounded-xl px-5 py-4 border border-[#2a2520]';
+          row.innerHTML = `
+            <div class="text-[#c8a96e] text-xs tracking-widest font-medium pt-0.5 shrink-0 w-6">
+              ${i + 1}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-[#9a8c7e] text-xs tracking-wide mb-1 leading-snug">${q.question}</div>
+              <div class="text-[#e8e0d4] text-sm font-medium leading-snug">
+                ${q.type === 'freetext'
+                  ? `<span class="font-light italic text-[#b5a898]">${answerLabel}</span>`
+                  : answerLabel
+                }
+                ${answerDesc ? `<span class="text-[#9a8c7e] font-light"> — ${answerDesc}</span>` : ''}
+              </div>
+            </div>
+          `;
+          list.appendChild(row);
+        });
+      }
+
       // ==================== SUBMIT ====================
       async function submitSurvey() {
         const btn = document.getElementById('nextBtn');
@@ -480,6 +541,7 @@
             body: JSON.stringify(payload),
           });
 
+          buildSummary();
           document.getElementById('surveyWrap').classList.add('hidden');
           document.getElementById('successScreen').classList.remove('hidden');
         } catch (err) {
@@ -493,6 +555,12 @@
       function restartSurvey() {
         current = 0;
         answers = {};
+
+        // Reset button state that submitSurvey() disabled
+        const btn = document.getElementById('nextBtn');
+        btn.disabled = false;
+        btn.classList.remove('opacity-60', 'cursor-not-allowed');
+
         document.getElementById('successScreen').classList.add('hidden');
         document.getElementById('surveyWrap').classList.remove('hidden');
         renderQuestion();
